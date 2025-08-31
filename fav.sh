@@ -5,8 +5,10 @@ FAV_FILE="$HOME/.fav_dirs"
 fav() {
     [ ! -f "$FAV_FILE" ] && touch "$FAV_FILE"
 
-    # Normalize the favorites file by removing trailing slashes
+    # Normalize the favorites file by removing trailing slashes, except for root
     sed -i 's/\/$//' "$FAV_FILE"
+    # Handle special case for root directory - ensure it's represented as "/"
+    sed -i 's/^$/\//' "$FAV_FILE"
 
     local arg="${1:-}"
     local next_arg="${2:-}"
@@ -22,8 +24,12 @@ fav() {
                 else
                     dir_to_add="$next_arg"
                 fi
-                # Normalize directory by removing trailing slash
-                dir_to_add=$(echo "$dir_to_add" | sed 's/\/$//')
+                # Normalize directory by removing trailing slash, except for root
+                if [ "$dir_to_add" = "/" ]; then
+                    dir_to_add="/"
+                else
+                    dir_to_add=$(echo "$dir_to_add" | sed 's/\/$//')
+                fi
                 if [ -d "$dir_to_add" ]; then
                     if ! grep -Fxq "$dir_to_add" "$FAV_FILE"; then
                         echo "$dir_to_add" >> "$FAV_FILE"
@@ -42,12 +48,19 @@ fav() {
                     return 1
                 fi
                 # Apply filter, normalize paths, and sort alphabetically
-                mapfile -t dirs < <(cat "$FAV_FILE" | sed 's/\/$//' | grep -i -- "$next_arg" | sort)
+                # Handle root directory specially
+                mapfile -t dirs < <(cat "$FAV_FILE" | sed 's/^$/\//' | sed 's/\/$//' | grep -i -- "$next_arg" | sort)
                 echo "Filter applied: \"$next_arg\""
                 filtered=1
                 ;;
             -r)
-                cwd=$(pwd | sed 's/\/$//')
+                cwd=$(pwd)
+                # Handle root directory specially
+                if [ "$cwd" = "/" ]; then
+                    cwd="/"
+                else
+                    cwd=$(echo "$cwd" | sed 's/\/$//')
+                fi
                 if grep -Fxq "$cwd" "$FAV_FILE"; then
                     sed -i "\|^${cwd}$|d" "$FAV_FILE"
                     echo "Removed: $cwd"
@@ -80,10 +93,10 @@ fav() {
 
     # Load favorites only if not filtered, normalizing paths and sorting alphabetically
     if [ $filtered -eq 0 ]; then
-        mapfile -t dirs < <(cat "$FAV_FILE" | sed 's/\/$//' | sort)
+        mapfile -t dirs < <(cat "$FAV_FILE" | sed 's/^$/\//' | sed 's/\/$//' | sort)
         # Ensure the last line is included even without trailing newline
         if [ -s "$FAV_FILE" ] && [ -n "$(tail -n 1 "$FAV_FILE")" ]; then
-            last_line=$(tail -n 1 "$FAV_FILE" | sed 's/\/$//')
+            last_line=$(tail -n 1 "$FAV_FILE" | sed 's/^$/\//' | sed 's/\/$//')
             if ! printf '%s\n' "${dirs[@]}" | grep -Fxq "$last_line"; then
                 dirs+=("$last_line")
                 # Re-sort the array to maintain alphabetical order
@@ -109,8 +122,15 @@ fav() {
 
     echo
     # Show options conditionally
-    if ! grep -Fxq "$(pwd | sed 's/\/$//')" "$FAV_FILE"; then
-        echo "[a] Add current directory ($(pwd | sed 's/\/$//'))"
+    current_dir=$(pwd)
+    if [ "$current_dir" = "/" ]; then
+        current_dir="/"
+    else
+        current_dir=$(echo "$current_dir" | sed 's/\/$//')
+    fi
+    
+    if ! grep -Fxq "$current_dir" "$FAV_FILE"; then
+        echo "[a] Add current directory ($current_dir)"
     fi
     if [ ${#dirs[@]} -gt 0 ]; then
         echo "[d] Delete favorite"
@@ -132,7 +152,12 @@ fav() {
             ;;
         # add current directory
         a|A)
-            cwd=$(pwd | sed 's/\/$//')
+            cwd=$(pwd)
+            if [ "$cwd" = "/" ]; then
+                cwd="/"
+            else
+                cwd=$(echo "$cwd" | sed 's/\/$//')
+            fi
             if ! grep -Fxq "$cwd" "$FAV_FILE"; then
                 echo "$cwd" >> "$FAV_FILE"
                 echo "Added: $cwd"

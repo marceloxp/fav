@@ -1,188 +1,240 @@
 # Terminal Favorites Manager
 
 ## Overview
-The **Terminal Favorites Manager** is a Bash script designed to streamline navigation and management of favorite directories in the terminal. It allows users to save, filter, navigate, and remove directories efficiently through a command-line interface (CLI) with both interactive and non-interactive modes. The script stores favorite directories in `~/.fav_dirs`, ensuring persistence across sessions, and provides a user-friendly way to manage them.
+The **Terminal Favorites Manager** (`fav`) is a lightweight Bash script that simplifies navigation and management of frequently used directories in the terminal. It provides both interactive and command-line interfaces to save, filter, navigate, and remove directory favorites. Your favorites are stored in `~/.fav_dirs` and persist across sessions.
 
 ## Quick Install
-To install the `fav` command, follow these steps:
 
 ```bash
+# Download and run the installer
 curl -L -o install_fav.sh https://github.com/marceloxp/fav/releases/download/v1.0.0/install.sh
 chmod +x install_fav.sh
 ./install_fav.sh
 rm install_fav.sh
+
+# Reload your shell configuration
 source ~/.bashrc  # or source ~/.zshrc, or restart your shell
+
+# Verify installation
 fav -h
 ```
 
-**SHA-256 Checksum for v1.0.0**: `5f4471307d46361427226ea2c1b2bb59e3664d7b59831833253bb34c78aef2cf`
+**What the installer does:**
+- Downloads `fav.sh` from GitHub releases
+- Verifies SHA-256 checksum for security
+- Installs to `~/.local/bin/fav` (or `/usr/local/bin/fav` for root)
+- Creates `~/.local/bin` directory if needed
+- Adds `~/.local/bin` to your PATH in shell configuration
+- Sources the script in your shell configuration
 
-**Important**: The installer verifies the SHA-256 checksum automatically using the `SHA256SUMS` file from the release. For extra security, confirm the checksum on the [GitHub release page](https://github.com/marceloxp/fav/releases/tag/v1.0.0) or in the `SHA256SUMS` file.
+**Security Note**: The installer automatically verifies the SHA-256 checksum using the `SHA256SUMS` file from the release. For extra security, you can confirm the checksum on the [GitHub release page](https://github.com/marceloxp/fav/releases/tag/v1.0.0).
 
-1. Run the commands above.
-2. If `fav` is not found, ensure `~/.local/bin` is in your PATH: `export PATH="$HOME/.local/bin:$PATH"`.
+**SHA-256 for v1.0.0**: `4b58746bdac9a4d3500b8ccb2c51b47b361638e7d35e763987d213dad7b20c61`
+
+If `fav` is not found after installation, ensure `~/.local/bin` is in your PATH:
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+```
 
 ## Manual Installation
-1. Download the `fav.sh` script:
-   ```bash
-   curl -L -o ~/.local/bin/fav https://github.com/marceloxp/fav/releases/download/v1.0.0/fav.sh
-   ```
-2. Make it executable:
-   ```bash
-   chmod +x ~/.local/bin/fav
-   ```
-3. Source the script in your shell configuration file (e.g., `~/.bashrc` or `~/.zshrc`):
-   ```bash
-   echo "source ~/.local/bin/fav" >> ~/.bashrc
-   ```
-4. Reload your shell configuration:
-   ```bash
-   source ~/.bashrc
-   ```
-   or
-   ```bash
-   source ~/.zshrc
-   ```
+
+If you prefer manual installation:
+
+```bash
+# Download the script
+curl -L -o ~/.local/bin/fav https://github.com/marceloxp/fav/releases/download/v1.0.0/fav.sh
+
+# Make it executable
+chmod +x ~/.local/bin/fav
+
+# Add to your shell configuration
+echo 'source ~/.local/bin/fav' >> ~/.bashrc  # or ~/.zshrc
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+
+# Reload your shell
+source ~/.bashrc
+```
+
+## Testing in Docker
+
+Test `fav` in an isolated Docker environment:
+
+```bash
+# Build the test image (uses minimal Alpine Linux)
+docker build -f Dockerfile.test -t fav-test .
+
+# Run with interactive shell
+docker run -it --rm fav-test
+
+# Test the fav command inside the container
+fav -h
+```
+
+The test image is very lightweight (~5MB) and includes only essential dependencies.
 
 ## Usage
-The `fav` command supports both non-interactive (with options) and interactive modes.
 
-### Non-Interactive Mode
-Run `fav` with the following options:
+### Command-Line Options
 
-- `-a [directory]`: Add a directory to favorites. If no directory is specified, the current directory is added (if not already in the list). Trailing slashes are automatically removed.
-  ```bash
-  fav -a /path/to/dir  # Add /path/to/dir
-  fav -a              # Add current directory
-  ```
-- `-f <pattern>`: Filter favorite directories by a case-insensitive pattern and enter interactive mode.
-  ```bash
-  fav -f project  # Show directories containing "project"
-  ```
-- `-r`: Remove the current directory from favorites (if present).
-  ```bash
-  fav -r  # Remove current directory
-  ```
-- `-h`: Display the help message with available options and usage.
-  ```bash
-  fav -h
-  ```
+```bash
+# Add current directory to favorites
+fav -a
+
+# Add specific directory
+fav -a /path/to/directory
+
+# Filter favorites by pattern
+fav -f project
+
+# Remove current directory from favorites
+fav -r
+
+# Show help
+fav -h
+```
 
 ### Interactive Mode
-Run `fav` without arguments or with `-f <pattern>` to enter interactive mode:
+
+Run `fav` without arguments to enter interactive mode:
+
 ```bash
-fav          # List all favorites
-fav -f proj  # List favorites filtered by "proj"
+fav
 ```
 
 In interactive mode, you can:
-- Enter a number (e.g., `1`) to navigate to the corresponding directory.
-- Press `a` to add the current directory (only shown if not already in favorites).
-- Press `d` to delete a favorite by its ID (only shown if there are favorites to delete).
-- Press `q` to quit.
+- Type a number to navigate to that directory
+- Press `a` to add current directory (if not already added)
+- Press `d` to delete a favorite by ID
+- Press `q` to quit
 
-## Using in a Docker Container
-The `fav` command can be used within a Docker container based on a PHP 8.3 Apache image. To include `fav` in your container:
+Example output:
+```
+Terminal Favorites Manager
+==========================
 
-1. Add to your `Dockerfile`:
-   ```dockerfile
-   # Option 1: Copy fav.sh directly
-   COPY ./fav.sh /usr/local/bin/fav
-   RUN chmod +x /usr/local/bin/fav
-   RUN echo "source /usr/local/bin/fav" >> /etc/profile
-   ```
-   or
-   ```dockerfile
-   # Option 2: Use installer
-   RUN curl -L -o install_fav.sh https://github.com/marceloxp/fav/releases/download/v1.0.0/install.sh \
-       && chmod +x install_fav.sh \
-       && ./install_fav.sh \
-       && rm install_fav.sh
-   ```
-2. Build the image:
-   ```bash
-   docker build -t my-php-app .
-   ```
-3. Run the container with a shell:
-   ```bash
-   docker run -it --rm my-php-app bash
-   ```
-4. Use the `fav` command inside the container:
-   ```bash
-   fav -h  # View help
-   fav -a /var/www/html  # Add a directory
-   fav -f html  # Filter favorites
-   ```
+ID   Directory
+--------------------------------------------
+1    /home/user/projects/website
+2    /home/user/documents/work
+3    /etc/apache2
 
-**Note**: If running as a non-root user (e.g., `www-data`), ensure the user has write permissions to their home directory for `~/.fav_dirs`.
+[a] Add current directory (/tmp)
+[d] Delete favorite
+[q] Quit
+
+Choice:
+```
 
 ## Features
-- **Add Directories**: Add the current or a specified directory to favorites, with automatic duplicate prevention.
-- **Filter Favorites**: Filter favorites using a case-insensitive pattern, displaying only matching directories.
-- **Remove Directories**: Remove the current directory or a specific favorite by ID.
-- **Navigate Easily**: Jump to a favorite directory by selecting its ID in interactive mode.
-- **Persistent Storage**: Favorites are stored in `~/.fav_dirs` and persist across sessions.
-- **Path Normalization**: Trailing slashes are automatically removed from directory paths to ensure consistency.
-- **Alphabetical Sorting**: Favorites are displayed in alphabetical order.
-- **No Duplicates**: The script prevents adding duplicate directories.
-- **Conditional Delete Option**: The `[d]` option in interactive mode is only shown when there are favorites to delete.
+
+- **Add Directories**: Save current or specified directories to favorites
+- **Filter Favorites**: Search favorites using case-insensitive patterns
+- **Remove Directories**: Delete favorites from the list
+- **Interactive Navigation**: Quickly jump to any favorite directory
+- **Persistent Storage**: Favorites saved in `~/.fav_dirs` file
+- **No Duplicates**: Prevents adding the same directory multiple times
+- **Path Normalization**: Automatically removes trailing slashes
+- **Alphabetical Sorting**: Favorites are always displayed in order
 
 ## Example Workflow
-1. Add the current directory to favorites:
+
+1. **Add directories to favorites**:
    ```bash
+   cd /important/project
+   fav -a
+   cd /etc/nginx/sites-available
    fav -a
    ```
-   Output: `Added: /path/to/current/dir`
-2. Filter favorites containing "apache":
-   ```bash
-   fav -f apache
-   ```
-   Output:
-   ```
-   Filter applied: "apache"
 
-   Terminal Favorites Manager
-   ==========================
-
-   ID   Directory
-   --------------------------------------------
-   1    /etc/apache2/sites-available
-   2    /etc/apache2/sites-enabled
-
-   [a] Add current directory (/path/to/current/dir)
-   [d] Delete favorite
-   [q] Quit
-
-   Choice:
-   ```
-3. Navigate to a directory by entering `1` in interactive mode.
-4. Remove the current directory:
-   ```bash
-   fav -r
-   ```
-   Output: `Removed: /path/to/current/dir`
-5. Delete a favorite in interactive mode:
+2. **List and navigate to favorites**:
    ```bash
    fav
-   ```
-   Choose `d`, then enter `2` to remove `/etc/apache2/sites-enabled`.
-6. View help:
-   ```bash
-   fav -h
+   # Type '1' to go to /important/project
+   # Type '2' to go to /etc/nginx/sites-available
    ```
 
-## Notes
-- The favorites file (`~/.fav_dirs`) is created automatically if it doesn't exist.
-- Invalid directories or options result in clear error messages.
-- The script normalizes directory paths by removing trailing slashes to prevent inconsistencies.
-- The `[d]` delete option is only displayed in interactive mode when there are favorites to delete.
-- The script is compatible with Bash and Zsh shells.
-- Favorites are stored in `~/.fav_dirs` as plain text, one directory per line, and can be edited manually if needed (ensure no trailing slashes).
+3. **Filter favorites**:
+   ```bash
+   fav -f nginx
+   # Shows only directories containing "nginx"
+   ```
+
+4. **Remove favorites**:
+   ```bash
+   fav -r  # Remove current directory
+   # Or use interactive mode and press 'd'
+   ```
+
+## Integration with Docker
+
+You can include `fav` in your Docker images. Here's the recommended method:
+
+```dockerfile
+# Install Terminal Favorites Manager with embedded checksum verification
+RUN curl -L -o fav.sh https://github.com/marceloxp/fav/releases/download/v1.0.0/fav.sh \
+    && echo "4b58746bdac9a4d3500b8ccb2c51b47b361638e7d35e763987d213dad7b20c61  fav.sh" | sha256sum -c \
+    && mv fav.sh /usr/local/bin/fav \
+    && chmod +x /usr/local/bin/fav
+```
+
+This approach:
+- ✅ Verifies script integrity with embedded checksum
+- ✅ Doesn't require external dependencies
+- ✅ Keaks the image minimal and secure
 
 ## Troubleshooting
-- **Favorites not listed correctly**: Ensure `~/.fav_dirs` is properly formatted (one directory per line, no trailing slashes). Run `sed -i 's/\/$//' ~/.fav_dirs` to normalize it.
-- **Removal not working**: Check `~/.fav_dirs` for trailing slashes or special characters using `cat -e ~/.fav_dirs`.
-- **Debugging**: Run `bash -x fav` to trace script execution and identify issues.
-- **Docker issues**: Ensure the user running the container (e.g., `www-data`) has write permissions to their home directory for `~/.fav_dirs`.
-- **Installation issues**: Inspect the `install_fav.sh` script before running, or run with verbosity: `bash -x ./install_fav.sh`. Check for errors in download or checksum verification.
-- **Checksum issues**: Verify the SHA-256 checksum in the [GitHub release page](https://github.com/marceloxp/fav/releases/tag/v1.0.0) or `SHA256SUMS` file.
+
+**Favorites not showing correctly?**
+```bash
+# Normalize the favorites file (remove trailing slashes)
+sed -i 's/\/$//' ~/.fav_dirs
+```
+
+**Installation issues?**
+- Check that `~/.local/bin` is in your PATH
+- Verify the script is executable: `chmod +x ~/.local/bin/fav`
+- Reload your shell configuration: `source ~/.bashrc`
+
+**Debugging:**
+```bash
+# Run with tracing
+bash -x $(which fav)
+
+# Check the favorites file
+cat ~/.fav_dirs
+
+# Check if fav is in PATH
+which fav
+```
+
+**Permission issues in Docker?**
+Ensure the container user has write access to their home directory for the `~/.fav_dirs` file.
+
+## Files Modified
+
+The installer creates/modifies:
+- `~/.local/bin/fav` (or `/usr/local/bin/fav` for root)
+- `~/.local/bin` directory (if it doesn't exist)
+- `~/.bashrc` and/or `~/.zshrc` (adds to PATH and sources the script)
+- `~/.fav_dirs` (created when first adding a favorite)
+
+## Notes
+
+- Favorites are stored one per line in `~/.fav_dirs`
+- You can manually edit this file if needed
+- The script works with both Bash and Zsh
+- Trailing slashes are automatically removed from paths
+- The delete option (`d`) only appears when favorites exist
+
+## Support
+
+For issues and questions:
+1. Check the troubleshooting section above
+2. Verify the SHA-256 checksum matches the release
+3. Ensure your system has Bash and standard utilities
+
+The script is designed to work on most Unix-like systems with minimal dependencies.
+
+---
+
+**Enjoy easier terminal navigation with `fav`!**
