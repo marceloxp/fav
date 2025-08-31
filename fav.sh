@@ -5,8 +5,12 @@ FAV_FILE="$HOME/.fav_dirs"
 fav() {
     [ ! -f "$FAV_FILE" ] && touch "$FAV_FILE"
 
+    # Normalize the favorites file by removing trailing slashes
+    sed -i 's/\/$//' "$FAV_FILE"
+
     local arg="${1:-}"
     local next_arg="${2:-}"
+    local filtered=0
 
     # Handle command-line options
     if [ -n "$arg" ]; then
@@ -18,6 +22,8 @@ fav() {
                 else
                     dir_to_add="$next_arg"
                 fi
+                # Normalize directory by removing trailing slash
+                dir_to_add=$(echo "$dir_to_add" | sed 's/\/$//')
                 if [ -d "$dir_to_add" ]; then
                     if ! grep -Fxq "$dir_to_add" "$FAV_FILE"; then
                         echo "$dir_to_add" >> "$FAV_FILE"
@@ -35,12 +41,13 @@ fav() {
                     echo "Error: Filter pattern required for -f."
                     return 1
                 fi
-                # Apply filter and enter interactive mode
-                mapfile -t dirs < <(sort -u "$FAV_FILE" | grep -i -- "$next_arg")
+                # Apply filter, normalize paths, and sort alphabetically
+                mapfile -t dirs < <(cat "$FAV_FILE" | sed 's/\/$//' | grep -i -- "$next_arg" | sort)
                 echo "Filter applied: \"$next_arg\""
+                filtered=1
                 ;;
             -r)
-                cwd=$(pwd)
+                cwd=$(pwd | sed 's/\/$//')
                 if grep -Fxq "$cwd" "$FAV_FILE"; then
                     sed -i "\|^${cwd}$|d" "$FAV_FILE"
                     echo "Removed: $cwd"
@@ -60,7 +67,7 @@ fav() {
                 echo "Interactive mode (no arguments or -f):"
                 echo "  [number]  Navigate to the directory with the given ID"
                 echo "  [a]       Add current directory (if not already added)"
-                echo "  [d]       Delete a favorite by ID"
+                echo "  [d]       Delete a favorite by ID (available if favorites exist)"
                 echo "  [q]       Quit"
                 return
                 ;;
@@ -71,15 +78,24 @@ fav() {
         esac
     fi
 
-    # Load favorites (sorted, no duplicates) if not already filtered
-    if [ -z "${dirs+x}" ]; then
-        mapfile -t dirs < <(sort -u "$FAV_FILE")
+    # Load favorites only if not filtered, normalizing paths and sorting alphabetically
+    if [ $filtered -eq 0 ]; then
+        mapfile -t dirs < <(cat "$FAV_FILE" | sed 's/\/$//' | sort)
+        # Ensure the last line is included even without trailing newline
+        if [ -s "$FAV_FILE" ] && [ -n "$(tail -n 1 "$FAV_FILE")" ]; then
+            last_line=$(tail -n 1 "$FAV_FILE" | sed 's/\/$//')
+            if ! printf '%s\n' "${dirs[@]}" | grep -Fxq "$last_line"; then
+                dirs+=("$last_line")
+                # Re-sort the array to maintain alphabetical order
+                mapfile -t dirs < <(printf '%s\n' "${dirs[@]}" | sort)
+            fi
+        fi
     fi
 
     # Show list
     echo
-    echo "Favorites Manager"
-    echo "========================"
+    echo "Terminal Favorites Manager"
+    echo "=========================="
 
     if [ ${#dirs[@]} -eq 0 ]; then
         echo "No favorites found."
@@ -92,12 +108,13 @@ fav() {
     fi
 
     echo
-    # Check if current directory is already in favorites
-    cwd=$(pwd)
-    if ! grep -Fxq "$cwd" "$FAV_FILE"; then
-        echo "[a] Add current directory ($cwd)"
+    # Show options conditionally
+    if ! grep -Fxq "$(pwd | sed 's/\/$//')" "$FAV_FILE"; then
+        echo "[a] Add current directory ($(pwd | sed 's/\/$//'))"
     fi
-    echo "[d] Delete favorite"
+    if [ ${#dirs[@]} -gt 0 ]; then
+        echo "[d] Delete favorite"
+    fi
     echo "[q] Quit"
     echo
 
@@ -115,7 +132,7 @@ fav() {
             ;;
         # add current directory
         a|A)
-            cwd=$(pwd)
+            cwd=$(pwd | sed 's/\/$//')
             if ! grep -Fxq "$cwd" "$FAV_FILE"; then
                 echo "$cwd" >> "$FAV_FILE"
                 echo "Added: $cwd"
@@ -125,13 +142,25 @@ fav() {
             ;;
         # delete (respecting current filter)
         d|D)
-            read -rp "Number to remove: " idx
-            idx=$((idx-1))
-            if [ $idx -ge 0 ] && [ $idx -lt ${#dirs[@]} ]; then
-                sed -i "\|^${dirs[$idx]}$|d" "$FAV_FILE"
-                echo "Removed: ${dirs[$idx]}"
+            if [ ${#dirs[@]} -eq 0 ]; then
+                echo "No favorites to delete."
             else
-                echo "Invalid index."
+                read -rp "Number to remove: " idx
+                idx=$((idx-1))
+                if [ $idx -ge 0 ] && [ $idx -lt ${#dirs[@]} ]; then
+                    # Escape special characters in the directory path for sed
+                    escaped_dir=$(printf '%s\n' "${dirs[$idx]}" | sed 's/[[\.*^$/]/\\&/g')
+                    # Debug: Show what we are trying to remove
+                    # echo "Debug: Attempting to remove: ${dirs[$idx]}" >&2
+                    if grep -Fx "${dirs[$idx]}" "$FAV_FILE"; then
+                        sed -i "\|^${escaped_dir}$|d" "$FAV_FILE"
+                        echo "Removed: ${dirs[$idx]}"
+                    else
+                        echo "Error: Directory not found in favorites: ${dirs[$idx]}"
+                    fi
+                else
+                    echo "Invalid index."
+                fi
             fi
             ;;
         q|Q)
