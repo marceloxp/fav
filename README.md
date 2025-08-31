@@ -1,0 +1,2 @@
+# fav
+Terminal Favorites Manager
