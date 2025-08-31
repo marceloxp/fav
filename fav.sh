@@ -50,7 +50,7 @@ fav() {
                 return
                 ;;
             -h)
-                echo "Favorites Manager"
+                echo "Terminal Favorites Manager"
                 echo "Usage: fav [option] [argument]"
                 echo "Options:"
                 echo "  -a [directory]  Add a directory to favorites (default: current directory)"
