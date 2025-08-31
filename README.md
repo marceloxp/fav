@@ -29,7 +29,7 @@ fav -h
 
 **Security Note**: The installer automatically verifies the SHA-256 checksum using the `SHA256SUMS` file from the release. For extra security, you can confirm the checksum on the [GitHub release page](https://github.com/marceloxp/fav/releases/tag/v1.0.0).
 
-**SHA-256 for v1.0.0**: `4b58746bdac9a4d3500b8ccb2c51b47b361638e7d35e763987d213dad7b20c61`
+**SHA-256 for v1.0.0**: `3e735a441b21f346adbacf69f54c056728abe8cc022e3d43ace45c2eac1dcaf7`
 
 If `fav` is not found after installation, ensure `~/.local/bin` is in your PATH:
 ```bash
@@ -172,7 +172,7 @@ You can include `fav` in your Docker images. Here's the recommended method:
 ```dockerfile
 # Install Terminal Favorites Manager with embedded checksum verification
 RUN curl -L -o fav.sh https://github.com/marceloxp/fav/releases/download/v1.0.0/fav.sh \
-    && echo "4b58746bdac9a4d3500b8ccb2c51b47b361638e7d35e763987d213dad7b20c61  fav.sh" | sha256sum -c \
+    && echo "3e735a441b21f346adbacf69f54c056728abe8cc022e3d43ace45c2eac1dcaf7  fav.sh" | sha256sum -c \
     && mv fav.sh /usr/local/bin/fav \
     && chmod +x /usr/local/bin/fav
 ```

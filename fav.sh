@@ -93,10 +93,23 @@ fav() {
 
     # Load favorites only if not filtered, normalizing paths and sorting alphabetically
     if [ $filtered -eq 0 ]; then
-        mapfile -t dirs < <(cat "$FAV_FILE" | sed 's/^$/\//' | sed 's/\/$//' | sort)
+        # Read and normalize the favorites, ensuring root is properly handled
+        mapfile -t dirs < <(cat "$FAV_FILE" | while read -r line; do
+            if [ -z "$line" ]; then
+                echo "/"
+            else
+                echo "$line" | sed 's/\/$//'
+            fi
+        done | sort)
+        
         # Ensure the last line is included even without trailing newline
-        if [ -s "$FAV_FILE" ] && [ -n "$(tail -n 1 "$FAV_FILE")" ]; then
-            last_line=$(tail -n 1 "$FAV_FILE" | sed 's/^$/\//' | sed 's/\/$//')
+        if [ -s "$FAV_FILE" ] && [ -n "$(tail -c 1 "$FAV_FILE")" ]; then
+            last_line=$(tail -n 1 "$FAV_FILE")
+            if [ -z "$last_line" ]; then
+                last_line="/"
+            else
+                last_line=$(echo "$last_line" | sed 's/\/$//')
+            fi
             if ! printf '%s\n' "${dirs[@]}" | grep -Fxq "$last_line"; then
                 dirs+=("$last_line")
                 # Re-sort the array to maintain alphabetical order
@@ -116,7 +129,12 @@ fav() {
         printf "\n%-4s %s\n" "ID" "Directory"
         echo "--------------------------------------------"
         for i in "${!dirs[@]}"; do
-            printf "%-4s %s\n" "$((i+1))" "${dirs[$i]}"
+            # Ensure root directory is displayed as "/" not empty
+            if [ -z "${dirs[$i]}" ]; then
+                printf "%-4s %s\n" "$((i+1))" "/"
+            else
+                printf "%-4s %s\n" "$((i+1))" "${dirs[$i]}"
+            fi
         done
     fi
 
@@ -129,7 +147,19 @@ fav() {
         current_dir=$(echo "$current_dir" | sed 's/\/$//')
     fi
     
-    if ! grep -Fxq "$current_dir" "$FAV_FILE"; then
+    # Check if current directory is in favorites (handle root specially)
+    in_favorites=0
+    for fav_dir in "${dirs[@]}"; do
+        if [ "$fav_dir" = "/" ] && [ "$current_dir" = "/" ]; then
+            in_favorites=1
+            break
+        elif [ "$fav_dir" = "$current_dir" ]; then
+            in_favorites=1
+            break
+        fi
+    done
+    
+    if [ $in_favorites -eq 0 ]; then
         echo "[a] Add current directory ($current_dir)"
     fi
     if [ ${#dirs[@]} -gt 0 ]; then
@@ -145,7 +175,11 @@ fav() {
         [0-9]*)
             idx=$((choice-1))
             if [ $idx -ge 0 ] && [ $idx -lt ${#dirs[@]} ]; then
-                cd "${dirs[$idx]}" || echo "Failed to enter ${dirs[$idx]}"
+                target_dir="${dirs[$idx]}"
+                if [ -z "$target_dir" ]; then
+                    target_dir="/"
+                fi
+                cd "$target_dir" || echo "Failed to enter $target_dir"
             else
                 echo "Invalid index."
             fi
@@ -158,7 +192,21 @@ fav() {
             else
                 cwd=$(echo "$cwd" | sed 's/\/$//')
             fi
-            if ! grep -Fxq "$cwd" "$FAV_FILE"; then
+            
+            # Check if already in favorites
+            already_exists=0
+            while IFS= read -r line; do
+                normalized_line=$(echo "$line" | sed 's/\/$//')
+                if [ -z "$normalized_line" ]; then
+                    normalized_line="/"
+                fi
+                if [ "$normalized_line" = "$cwd" ]; then
+                    already_exists=1
+                    break
+                fi
+            done < "$FAV_FILE"
+            
+            if [ $already_exists -eq 0 ]; then
                 echo "$cwd" >> "$FAV_FILE"
                 echo "Added: $cwd"
             else
@@ -173,16 +221,21 @@ fav() {
                 read -rp "Number to remove: " idx
                 idx=$((idx-1))
                 if [ $idx -ge 0 ] && [ $idx -lt ${#dirs[@]} ]; then
-                    # Escape special characters in the directory path for sed
-                    escaped_dir=$(printf '%s\n' "${dirs[$idx]}" | sed 's/[[\.*^$/]/\\&/g')
-                    # Debug: Show what we are trying to remove
-                    # echo "Debug: Attempting to remove: ${dirs[$idx]}" >&2
-                    if grep -Fx "${dirs[$idx]}" "$FAV_FILE"; then
-                        sed -i "\|^${escaped_dir}$|d" "$FAV_FILE"
-                        echo "Removed: ${dirs[$idx]}"
-                    else
-                        echo "Error: Directory not found in favorites: ${dirs[$idx]}"
+                    target_dir="${dirs[$idx]}"
+                    if [ -z "$target_dir" ]; then
+                        target_dir="/"
                     fi
+                    
+                    # Remove from file
+                    escaped_dir=$(printf '%s\n' "$target_dir" | sed 's/[[\.*^$/]/\\&/g')
+                    sed -i "\|^${escaped_dir}$|d" "$FAV_FILE"
+                    
+                    # Also remove empty lines that represent root
+                    if [ "$target_dir" = "/" ]; then
+                        sed -i '/^$/d' "$FAV_FILE"
+                    fi
+                    
+                    echo "Removed: $target_dir"
                 else
                     echo "Invalid index."
                 fi

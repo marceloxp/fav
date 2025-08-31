@@ -5,7 +5,7 @@ RUN apk add --no-cache bash curl
 
 # Install Terminal Favorites Manager with embedded checksum verification
 RUN curl -L -o fav.sh https://github.com/marceloxp/fav/releases/download/v1.0.0/fav.sh \
-    && echo "5f4471307d46361427226ea2c1b2bb59e3664d7b59831833253bb34c78aef2cf  fav.sh" | sha256sum -c \
+    && echo "3e735a441b21f346adbacf69f54c056728abe8cc022e3d43ace45c2eac1dcaf7  fav.sh" | sha256sum -c \
     && mv fav.sh /usr/local/bin/fav \
     && chmod +x /usr/local/bin/fav
 
