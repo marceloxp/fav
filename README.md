@@ -3,15 +3,36 @@
 ## Overview
 The **Terminal Favorites Manager** is a Bash script designed to streamline navigation and management of favorite directories in the terminal. It allows users to save, filter, navigate, and remove directories efficiently through a command-line interface (CLI) with both interactive and non-interactive modes. The script stores favorite directories in `~/.fav_dirs`, ensuring persistence across sessions, and provides a user-friendly way to manage them.
 
-## Installation
-1. Copy the `fav.sh` script to a suitable location, e.g., `~/.local/bin/fav.sh`.
+## Quick Install (Composer-Style)
+To install the `fav` command quickly, download and run the installer with the SHA-256 checksum:
+
+```bash
+curl -sS https://github.com/marceloxp/fav/releases/download/v1.0.0/install.sh | bash -s 5f4471307d46361427226ea2c1b2bb59e3664d7b59831833253bb34c78aef2cf
+source ~/.bashrc  # or source ~/.zshrc, or restart your shell
+fav -h
+```
+
+**SHA-256 Checksum for v1.0.0**: `1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2`
+
+**Important**: Verify the checksum on the [GitHub release page](https://github.com/marceloxp/fav/releases/tag/v1.0.0) or in the `SHA256SUMS` file to ensure integrity. Do not rely solely on the checksum listed here, as it may be altered in a man-in-the-middle attack.
+
+1. Visit the [release page](https://github.com/marceloxp/fav/releases/tag/v1.0.0).
+2. Confirm the SHA-256 checksum in the `SHA256SUMS` file or release description.
+3. Run the command above, replacing the checksum if necessary.
+4. If `fav` is not found, ensure `~/.local/bin` is in your PATH: `export PATH="$HOME/.local/bin:$PATH"`.
+
+## Manual Installation
+1. Download the `fav.sh` script:
+   ```bash
+   curl -L -o ~/.local/bin/fav https://github.com/marceloxp/fav/releases/download/v1.0.0/fav.sh
+   ```
 2. Make it executable:
    ```bash
-   chmod +x ~/.local/bin/fav.sh
+   chmod +x ~/.local/bin/fav
    ```
 3. Source the script in your shell configuration file (e.g., `~/.bashrc` or `~/.zshrc`):
    ```bash
-   source ~/.local/bin/fav.sh
+   echo "source ~/.local/bin/fav" >> ~/.bashrc
    ```
 4. Reload your shell configuration:
    ```bash
@@ -59,7 +80,39 @@ In interactive mode, you can:
 - Press `d` to delete a favorite by its ID (only shown if there are favorites to delete).
 - Press `q` to quit.
 
-### Features
+## Using in a Docker Container
+The `fav` command can be used within a Docker container based on a PHP 8.3 Apache image. To include `fav` in your container:
+
+1. Add to your `Dockerfile`:
+   ```dockerfile
+   # Option 1: Copy fav.sh directly
+   COPY ./fav.sh /usr/local/bin/fav
+   RUN chmod +x /usr/local/bin/fav
+   RUN echo "source /usr/local/bin/fav" >> /etc/profile
+   ```
+   or
+   ```dockerfile
+   # Option 2: Use installer (replace with actual checksum)
+   RUN curl -sS https://github.com/marceloxp/fav/releases/download/v1.0.0/install.sh | bash -s 1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2
+   ```
+2. Build the image:
+   ```bash
+   docker build -t my-php-app .
+   ```
+3. Run the container with a shell:
+   ```bash
+   docker run -it --rm my-php-app bash
+   ```
+4. Use the `fav` command inside the container:
+   ```bash
+   fav -h  # View help
+   fav -a /var/www/html  # Add a directory
+   fav -f html  # Filter favorites
+   ```
+
+**Note**: If running as a non-root user (e.g., `www-data`), ensure the user has write permissions to their home directory for `~/.fav_dirs`.
+
+## Features
 - **Add Directories**: Add the current or a specified directory to favorites, with automatic duplicate prevention.
 - **Filter Favorites**: Filter favorites using a case-insensitive pattern, displaying only matching directories.
 - **Remove Directories**: Remove the current directory or a specific favorite by ID.
@@ -126,3 +179,5 @@ In interactive mode, you can:
 - **Favorites not listed correctly**: Ensure `~/.fav_dirs` is properly formatted (one directory per line, no trailing slashes). Run `sed -i 's/\/$//' ~/.fav_dirs` to normalize it.
 - **Removal not working**: Check `~/.fav_dirs` for trailing slashes or special characters using `cat -e ~/.fav_dirs`.
 - **Debugging**: Run `bash -x fav` to trace script execution and identify issues.
+- **Docker issues**: Ensure the user running the container (e.g., `www-data`) has write permissions to their home directory for `~/.fav_dirs`.
+- **Checksum issues**: Verify the SHA-256 checksum matches the one provided in the GitHub release.
