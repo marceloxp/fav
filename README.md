@@ -3,23 +3,24 @@
 ## Overview
 The **Terminal Favorites Manager** is a Bash script designed to streamline navigation and management of favorite directories in the terminal. It allows users to save, filter, navigate, and remove directories efficiently through a command-line interface (CLI) with both interactive and non-interactive modes. The script stores favorite directories in `~/.fav_dirs`, ensuring persistence across sessions, and provides a user-friendly way to manage them.
 
-## Quick Install (Composer-Style)
-To install the `fav` command quickly, download and run the installer with the SHA-256 checksum:
+## Quick Install
+To install the `fav` command, follow these steps:
 
 ```bash
-curl -sS https://github.com/marceloxp/fav/releases/download/v1.0.0/install.sh | bash -s 5f4471307d46361427226ea2c1b2bb59e3664d7b59831833253bb34c78aef2cf
+curl -L -o install_fav.sh https://github.com/marceloxp/fav/releases/download/v1.0.0/install.sh
+chmod +x install_fav.sh
+./install_fav.sh
+rm install_fav.sh
 source ~/.bashrc  # or source ~/.zshrc, or restart your shell
 fav -h
 ```
 
-**SHA-256 Checksum for v1.0.0**: `1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2`
+**SHA-256 Checksum for v1.0.0**: `5f4471307d46361427226ea2c1b2bb59e3664d7b59831833253bb34c78aef2cf`
 
-**Important**: Verify the checksum on the [GitHub release page](https://github.com/marceloxp/fav/releases/tag/v1.0.0) or in the `SHA256SUMS` file to ensure integrity. Do not rely solely on the checksum listed here, as it may be altered in a man-in-the-middle attack.
+**Important**: The installer verifies the SHA-256 checksum automatically using the `SHA256SUMS` file from the release. For extra security, confirm the checksum on the [GitHub release page](https://github.com/marceloxp/fav/releases/tag/v1.0.0) or in the `SHA256SUMS` file.
 
-1. Visit the [release page](https://github.com/marceloxp/fav/releases/tag/v1.0.0).
-2. Confirm the SHA-256 checksum in the `SHA256SUMS` file or release description.
-3. Run the command above, replacing the checksum if necessary.
-4. If `fav` is not found, ensure `~/.local/bin` is in your PATH: `export PATH="$HOME/.local/bin:$PATH"`.
+1. Run the commands above.
+2. If `fav` is not found, ensure `~/.local/bin` is in your PATH: `export PATH="$HOME/.local/bin:$PATH"`.
 
 ## Manual Installation
 1. Download the `fav.sh` script:
@@ -92,8 +93,11 @@ The `fav` command can be used within a Docker container based on a PHP 8.3 Apach
    ```
    or
    ```dockerfile
-   # Option 2: Use installer (replace with actual checksum)
-   RUN curl -sS https://github.com/marceloxp/fav/releases/download/v1.0.0/install.sh | bash -s 1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2
+   # Option 2: Use installer
+   RUN curl -L -o install_fav.sh https://github.com/marceloxp/fav/releases/download/v1.0.0/install.sh \
+       && chmod +x install_fav.sh \
+       && ./install_fav.sh \
+       && rm install_fav.sh
    ```
 2. Build the image:
    ```bash
@@ -180,4 +184,5 @@ The `fav` command can be used within a Docker container based on a PHP 8.3 Apach
 - **Removal not working**: Check `~/.fav_dirs` for trailing slashes or special characters using `cat -e ~/.fav_dirs`.
 - **Debugging**: Run `bash -x fav` to trace script execution and identify issues.
 - **Docker issues**: Ensure the user running the container (e.g., `www-data`) has write permissions to their home directory for `~/.fav_dirs`.
-- **Checksum issues**: Verify the SHA-256 checksum matches the one provided in the GitHub release.
+- **Installation issues**: Inspect the `install_fav.sh` script before running, or run with verbosity: `bash -x ./install_fav.sh`. Check for errors in download or checksum verification.
+- **Checksum issues**: Verify the SHA-256 checksum in the [GitHub release page](https://github.com/marceloxp/fav/releases/tag/v1.0.0) or `SHA256SUMS` file.
