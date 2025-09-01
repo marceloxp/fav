@@ -1,5 +1,7 @@
 # Terminal Favorites Manager
 
+![screenshot](https://raw.githubusercontent.com/marceloxp/fav/refs/heads/main/fav.png)
+
 ## Overview
 The **Terminal Favorites Manager** (`fav`) is a lightweight Bash script that simplifies navigation and management of frequently used directories in the terminal. It provides both interactive and command-line interfaces to save, filter, navigate, and remove directory favorites. Your favorites are stored in `~/.fav_dirs` and persist across sessions.
 
@@ -14,6 +16,26 @@ rm install_fav.sh
 
 # Reload your shell configuration
 source ~/.bashrc  # or source ~/.zshrc, or restart your shell
+
+# Verify installation
+fav -h
+```
+
+## One line version
+```bash
+curl -L -o install_fav.sh https://github.com/marceloxp/fav/releases/download/v1.0.0/install.sh && \
+chmod +x install_fav.sh && \
+./install_fav.sh && \
+rm install_fav.sh && \
+source ~/.${SHELL##*/}rc && \
+fav -h
+```
+
+## Compact version
+
+```bash
+# Direct download and install
+curl -Ls https://github.com/marceloxp/fav/releases/download/v1.0.0/install.sh | bash && exec $SHELL
 
 # Verify installation
 fav -h
