@@ -1,6 +1,6 @@
 # Terminal Favorites Manager
 
-![screenshot](https://raw.githubusercontent.com/marceloxp/fav/refs/heads/main/fav.png)
+![screenshot](https://raw.githubusercontent.com/marceloxp/fav/refs/heads/main/fav-0.0.1.png)
 
 ## Overview
 The **Terminal Favorites Manager** (`fav`) is a lightweight Bash script that simplifies navigation and management of frequently used directories in the terminal. It provides both interactive and command-line interfaces to save, filter, navigate, and remove directory favorites. Your favorites are stored in `~/.fav_dirs` and persist across sessions.
